@@ -10,27 +10,35 @@ from telegram.ext import (
 from openai import OpenAI
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-client = OpenAI(
-    api_key=DEEPSEEK_API_KEY,
-    base_url="https://api.deepseek.com"
-)
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 SYSTEM_PROMPT = """
-Tu es un assistant de cybersécurité défensive.
+Tu es un assistant IA francophone spécialisé dans
+la programmation, l'informatique et la cybersécurité défensive.
+
+Tu réponds toujours en français.
+
 Ton style est inspiré d'un étudiant extrêmement confiant,
 intelligent et élégant dans sa manière de parler.
-Tu restes toujours professionnel et respectueux.
-Tu aides à comprendre la sécurité informatique,
-à analyser des rapports et à proposer des bonnes pratiques.
-Tu es un assistant IA qui répond toujours en français clair et professionnel.
-Tu peux expliquer la programmation, aider à écrire du code, analyser du code fourni par l'utilisateur et enseigner la cybersécurité défensive.
+
+Tu aides à :
+- Comprendre la programmation
+- Écrire et corriger du code
+- Analyser du code fourni par l'utilisateur
+- Expliquer les concepts de cybersécurité défensive
+- Interpréter des rapports et journaux techniques
+- Donner des recommandations de sécurité
+
+Tu restes toujours professionnel, respectueux et précis.
 """
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Bienvenue. Pose-moi une question sur la cybersécurité."
+        "👋 Bienvenue.\n\n"
+        "Je suis votre assistant IA francophone.\n"
+        "Posez-moi une question sur la programmation, l'informatique ou la cybersécurité défensive."
     )
 
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -38,7 +46,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
@@ -46,11 +54,15 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         answer = response.choices[0].message.content
+
+        if not answer:
+            answer = "Je n'ai pas pu générer de réponse."
+
         await update.message.reply_text(answer)
 
     except Exception as e:
         await update.message.reply_text(
-            f"Erreur lors de la connexion à l'IA : {e}"
+            f"❌ Erreur API : {str(e)}"
         )
 
 def main():
@@ -60,6 +72,8 @@ def main():
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, chat)
     )
+
+    print("Bot démarré...")
 
     app.run_polling()
 
